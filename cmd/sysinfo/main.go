@@ -12,18 +12,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 
 	"github.com/compforge/sysinfo"
 )
 
 func main() {
 	if len(os.Args) != 1 {
-		fmt.Fprintln(os.Stderr, "usage: sysinfo (prints Linux system information as JSON)")
+		fmt.Fprintln(os.Stderr, "usage: sysinfo (prints system information as JSON)")
 		os.Exit(2)
-	}
-	if runtime.GOOS != "linux" {
-		log.Fatal("sysinfo supports Linux only")
 	}
 
 	var si sysinfo.SysInfo

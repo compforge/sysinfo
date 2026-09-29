@@ -2,7 +2,7 @@
 //
 // Use of this source code is governed by an MIT-style license that can be found in the LICENSE file.
 
-// Package sysinfo is a Go library providing Linux OS / kernel / hardware system information.
+// Package sysinfo is a Go library providing Linux and macOS / kernel / hardware system information.
 package sysinfo
 
 // SysInfo struct encapsulates all other information structs.
@@ -30,24 +30,5 @@ func (si *SysInfo) GetSysInfo() {
 	// Meta info
 	si.getMetaInfo()
 
-	// DMI info
-	si.getProductInfo()
-	si.getBoardInfo()
-	si.getChassisInfo()
-	si.getBIOSInfo()
-
-	// SMBIOS info
-	si.getMemoryInfo()
-
-	// Node info
-	si.getNodeInfo() // depends on BIOS info
-
-	// Hardware info
-	si.getCPUInfo() // depends on Node info
-	si.getStorageInfo()
-	si.getNetworkInfo()
-
-	// Software info
-	si.getOSInfo()
-	si.getKernelInfo()
+	si.getPlatformInfo()
 }
