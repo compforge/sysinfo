@@ -1,0 +1,34 @@
+name: Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: make lint test build
+      - name: Run without root and verify JSON
+        run: |
+          case "$(uname -m)" in aarch64) arch=arm64 ;; x86_64) arch=amd64 ;; esac
+          version=$(sed -n 's/^const Version = "\([^"]*\)"/\1/p' version.go)
+          ./dist/sysinfo-$version-linux-$arch > /tmp/sysinfo.json
+          python3 - <<'PYTHON'
+          import json, os
+          with open('/tmp/sysinfo.json') as f:
+              report = json.load(f)
+          assert report['runtime']['page_size_bytes'] == os.sysconf('SC_PAGE_SIZE')
+          assert report['runtime']['resource_limits']
+          assert report['runtime']['libc']
+          assert report['runtime']['vm']['overcommit_memory'] in ['0', '1', '2']
+          PYTHON
