@@ -7,7 +7,7 @@ TEST_WORKERS ?= 4
 LINT_WORKERS ?= 4
 
 .DEFAULT_GOAL := build
-.PHONY: fix lint test build build-all build-linux-amd64 build-linux-arm64
+.PHONY: fix lint test build build-all build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64
 fix:
 	$(GO) fmt ./...
 
@@ -16,13 +16,15 @@ lint:
 	$(GO) vet -p $(LINT_WORKERS) ./...
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) vet -p $(LINT_WORKERS) ./...
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) vet -p $(LINT_WORKERS) ./...
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) vet -p $(LINT_WORKERS) ./...
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) vet -p $(LINT_WORKERS) ./...
 
 test:
 	$(GO) test -p $(TEST_WORKERS) -parallel 1 $(TEST_PACKAGES)
 
 # One static binary per architecture serves supported Linux distributions and
 # kernels. Do not create kernel/glibc-labelled copies of the same executable.
-build: build-linux-amd64 build-linux-arm64
+build: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64
 
 build-all: build
 
@@ -31,3 +33,9 @@ build-linux-amd64:
 
 build-linux-arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 GOARM64=v8.0 $(GO) build -trimpath -ldflags='-s -w' -o "$(DIST_DIR)/$(ARTIFACT_PREFIX)-linux-arm64" ./cmd/sysinfo
+
+build-darwin-amd64:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 GOAMD64=v1 $(GO) build -trimpath -ldflags='-s -w' -o "$(DIST_DIR)/$(ARTIFACT_PREFIX)-darwin-amd64" ./cmd/sysinfo
+
+build-darwin-arm64:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 GOARM64=v8.0 $(GO) build -trimpath -ldflags='-s -w' -o "$(DIST_DIR)/$(ARTIFACT_PREFIX)-darwin-arm64" ./cmd/sysinfo

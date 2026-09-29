@@ -14,12 +14,14 @@ import (
 type RuntimeInfo struct {
 	PageSizeBytes int               `json:"page_size_bytes"`
 	ProcessArch   string            `json:"process_architecture"`
+	Translation   string            `json:"translation,omitempty"`
 	GoVersion     string            `json:"go_version"`
 	Libc          []Libc            `json:"libc"`
 	Limits        []ResourceLimit   `json:"resource_limits"`
 	Memory        map[string]string `json:"memory"`
 	VM            map[string]string `json:"vm"`
 	Cgroup        string            `json:"cgroup_membership,omitempty"`
+	Notes         []string          `json:"notes,omitempty"`
 	Errors        map[string]string `json:"errors,omitempty"`
 }
 
@@ -42,44 +44,7 @@ func (si *SysInfo) getRuntimeInfo() {
 		Memory: map[string]string{}, VM: map[string]string{},
 		Errors: map[string]string{},
 	}
-	if runtime.GOOS != "linux" {
-		r.Errors["platform"] = "Linux is required"
-		return
-	}
-	read := func(path string) string {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			r.Errors[path] = err.Error()
-			return ""
-		}
-		value := strings.TrimSpace(string(data))
-		if value == "" {
-			r.Errors[path] = "file is empty"
-		}
-		return value
-	}
-	if data := read("/proc/self/limits"); data != "" {
-		var err error
-		r.Limits, err = parseLimits(data)
-		if err != nil {
-			r.Errors["/proc/self/limits"] = err.Error()
-		}
-	}
-	for _, line := range strings.Split(read("/proc/meminfo"), "\n") {
-		if key, value, ok := strings.Cut(line, ":"); ok {
-			r.Memory[key] = strings.TrimSpace(value)
-		}
-	}
-	for _, name := range []string{"overcommit_memory", "overcommit_ratio", "overcommit_kbytes", "max_map_count", "mmap_min_addr"} {
-		if value := read("/proc/sys/vm/" + name); value != "" {
-			r.VM[name] = value
-		}
-	}
-	r.Cgroup = read("/proc/self/cgroup")
-	r.Libc, r.Errors["libc"] = findLibc()
-	if r.Errors["libc"] == "" {
-		delete(r.Errors, "libc")
-	}
+	si.getPlatformRuntime()
 }
 
 func parseLimits(data string) ([]ResourceLimit, error) {
